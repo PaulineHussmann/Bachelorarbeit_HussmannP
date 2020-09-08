@@ -1,0 +1,10 @@
+Metadata-Version: 1.0
+Name: block
+Version: 0.0.5
+Summary: Improved block matrix creation for numpy and PyTorch.
+Home-page: https://github.com/bamos/block
+Author: Brandon Amos
+Author-email: bamos@cs.cmu.edu
+License: Apache 2.0
+Description: UNKNOWN
+Platform: any
