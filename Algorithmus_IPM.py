@@ -25,9 +25,9 @@ def predictorCorrector(G, A, b, c, x, y, lam):
     n = len(x)
     m = len(y)
     iteration = np.concatenate((x, y, lam), axis=None)
-    for i in range(1, 100):  # 100 iterations are rather randomly generated as i don't know convergence for this
-        affines = linSolver1(G, A, b, c, iteration[:n], iteration[n:n+m], iteration[n+m:], 0,
-                             0)  # as sigma is 0 anyways, we do not have to compute mu before this step
+    for i in range(1, 1000):  # 1000 iterations are rather randomly generated as i don't know convergence for this
+        affines = np.round(linSolver1(G, A, b, c, iteration[:n], iteration[n:n+m], iteration[n+m:], 0,
+                             0),decimals=5)  # as sigma is 0 anyways, we do not have to compute mu before this step
         y_aff = affines[n:n + m]  # left border included, right border excluded!
         lam_aff = affines[n + m:]
         mu = np.matmul(iteration[n:n+m], iteration[n+m:]) / m
@@ -35,26 +35,19 @@ def predictorCorrector(G, A, b, c, x, y, lam):
         if alpha_aff <= 0 or alpha_aff > 1:
             print("failed")
             break
-        # print(alpha_aff)
         mu_aff = np.matmul((iteration[n:n+m] + alpha_aff * y_aff).transpose(), iteration[n+m:] + alpha_aff * lam_aff) / m
-        # print(mu_aff)
         sigma = pow(mu_aff / mu, 3)
-        # print(sigma)
-        deltas = np.nan_to_num(linSolver2(G, A, b, c, iteration[:n], iteration[n:n + m], iteration[n + m:],
-                                          np.round(y_aff, decimals=7), np.round(lam_aff, decimals=7), sigma, mu))
-        #print(deltas)
+        deltas = np.round(np.nan_to_num(linSolver2(G, A, b, c, iteration[:n], iteration[n:n + m], iteration[n + m:],
+                                          np.round(y_aff, decimals=7), np.round(lam_aff, decimals=7), sigma, mu)),decimals=5)
         delta_y = deltas[n:n + m]
-        # print(delta_y)
         delta_lam = deltas[n + m:]
-        # print(delta_lam)
         tau = 1-(1/(2**i)) # converges to 1 to accelerate convergence as proposed in Nocedal
         alpha_hat = min(primalDualAlpha(iteration[n:n+m], delta_y, tau), primalDualAlpha(iteration[n+m:], delta_lam, tau))
         if alpha_hat <= 0 or alpha_hat > 1:
             print("failed")
             break
-        #print(alpha_hat)
         iteration = iteration + alpha_hat * deltas
-        print(iteration)
+        #print(iteration[:n])
     return iteration
 
 
@@ -134,14 +127,14 @@ def primalDualAlpha(var, delta_var, tau):
 
 
 # testing area
-G = np.array([[2, 0], [0, 2]])
-A = np.array([[1, 0], [-1, 0], [0,1],[0,-1]])
-y = np.array([1, 2, 3,4])
-x = np.array([1, 1])
-c = np.array([1, 1])
-b = np.array([1,2, 3, 4])
-lam = np.array([1, 1, 1,1])
+#G = np.array([[2, 0], [0, 2]])
+#A = np.array([[1, 0], [-1, 0], [0,1],[0,-1]])
+#y = np.array([1, 2, 3,4])
+#x = np.array([1, 1])
+#c = np.array([1, 1])
+#b = np.array([1,2, 3, 4])
+#lam = np.array([1, 1, 1,1])
 
-print(predictorCorrector(G, A, b, c, np.array([-9 / 7, -43 / 31]), np.array([9 / 7, 12 / 7, 105 / 31, 112 / 31]),
-                         np.array([16 / 7, 13 / 7, 66 / 31, 59 / 31])))
+#print(predictorCorrector(G, A, b, c, np.array([-9 / 7, -43 / 31]), np.array([9 / 7, 12 / 7, 105 / 31, 112 / 31]),
+                         #np.array([16 / 7, 13 / 7, 66 / 31, 59 / 31])))
 # with this data I calculated all steps by hand and 'proved' correctness of the algorithm that way

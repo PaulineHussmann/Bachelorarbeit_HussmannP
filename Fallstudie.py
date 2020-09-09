@@ -1,54 +1,100 @@
 import numpy as np
 import scipy.linalg
-from block import block # used for convenient block matrices, requires scipy @author Brandon Amos
 import Algorithmus_IPM
+import matplotlib.pyplot as plt
+from matplotlib import pyplot
 
-p = 2    # dimension of oberved parameter theta and of X_i
-M = 10   # number of observations of parmeter theta
-N = 100  # number of observations of Y and X
+p = 1    # dimension of oberved parameter theta and of X_i
+M = 100   # number of observations of parameter theta
+N = 1000  # number of observations of Y
 sigma = 1
 
 # generate uniformly distributed realizations of theta (what we observed)
-thetas = []
-# for each theta we want one intercept term and one regressor term, so we can use the model
-# M(X,theta) = theta_0 + theta_1 * X_1 and X is one dimensional
-for i in range(1, 2 * M + 1):
-    theta = np.round(np.random.uniform(-1, 1), decimals=5)
-    thetas.append(theta)
+thetas = np.random.uniform(-1,1,M)
+#print(thetas)
+bins = np.linspace(-1,1,100)
+pyplot.hist(thetas,bins)
+pyplot.xlabel("Realisierung von theta ~ U(-1,1)")
+pyplot.ylabel("Häufigkeit")
+pyplot.show()
 
-print(thetas)
+
+# M(X,theta) = theta
+
+# dataset Y (height of female students at FU Berlin: https://userpage.fu-berlin.de/soga/200/2010_data_sets/students.csv):
+Y = [160, 172, 168, 175, 156, 167, 165, 162, 172, 158, 157, 156, 162, 168, 167, 155, 145, 161, 169, 170,
+  180, 172, 171, 153, 157, 173, 170, 170, 160, 164, 167, 159, 167, 157, 173, 171, 152, 154, 159, 153,
+  150, 167, 149, 155, 159, 174, 159, 160, 166, 155, 162, 181, 168, 158, 166, 173, 168, 155, 173, 176,
+  162, 164, 155, 176, 175, 156, 163, 166, 155, 168, 160, 153, 173, 156, 162, 166, 165, 173, 166, 172,
+  159, 160, 158, 162, 156, 166, 148, 161, 164, 156, 162, 168, 160, 172, 156, 163, 164, 155, 150, 152,
+  176, 164, 155, 181, 156, 152, 156, 172, 161, 158, 146, 165, 167, 143, 161, 174, 161, 152, 162, 149,
+  165, 159, 170, 159, 169, 151, 166, 168, 164, 168, 170, 157, 165, 170, 162, 163, 155, 144, 161, 181,
+  152, 157, 173, 154, 157, 173, 150, 167, 163, 157, 164, 159, 163, 158, 160, 166, 154, 169, 163, 173,
+  161, 170, 162, 169, 174, 163, 166, 168, 171, 166, 178, 156, 163, 163, 166, 174, 168, 152, 174, 166,
+  181, 158, 165, 152, 158, 162, 165, 155, 167, 165, 149, 167, 154, 172, 177, 171, 177, 159, 163, 167,
+  162, 171, 164, 161, 165, 157, 179, 162, 155, 158, 165, 165, 156, 163, 172, 170, 160, 168, 157, 155,
+  167, 162, 165, 165, 164, 169, 160, 167, 160, 170, 165, 150, 173, 165, 161, 174, 170, 166, 173, 155,
+  168, 174, 149, 161, 172, 166, 165, 155, 157, 169, 158, 170, 148, 193, 154, 156, 164, 167, 164, 154,
+  163, 156, 166, 167, 168, 172, 153, 167, 159, 178, 164, 162, 158, 161, 159, 169, 174, 167, 161, 164,
+  177, 160, 176, 166, 171, 179, 167, 139, 186, 159, 175, 169, 153, 168, 170, 160, 158, 165, 164, 172,
+  166, 157, 170, 172, 174, 174, 153, 167, 164, 151, 167, 168, 179, 168, 162, 163, 172, 166, 159, 169,
+  162, 170, 158, 177, 165, 160, 165, 166, 154, 177, 167, 167, 177, 154, 168, 172, 154, 168, 168, 143,
+  149, 167, 158, 169, 157, 182, 165, 160, 168, 184, 170, 172, 173, 164, 160, 168, 176, 151, 169, 160,
+  165, 169, 152, 173, 157, 177, 158, 160, 167, 176, 147, 166, 160, 162, 149, 169, 161, 165, 163, 157,
+  152, 167, 152, 162, 163, 170, 164, 155, 161, 167, 178, 168, 155, 161, 162, 159, 165, 155, 156, 171,
+  160, 169, 167, 181, 168, 176, 162, 163, 151, 184, 163, 156, 164, 166, 165, 165, 170, 172, 156, 165,
+  152, 168, 157, 166, 169, 154, 177, 165, 167, 153, 161, 158, 149, 159, 163, 148, 161, 167, 158, 165,
+  167, 164, 182, 154, 169, 163, 153, 160, 161, 152, 172, 166, 165, 152, 166, 178, 155, 163, 164, 167,
+  164, 144, 163, 162, 171, 164, 161, 168, 178, 168, 154, 174, 166, 156, 165, 156, 165, 160, 160, 166,
+  164, 154, 167, 158, 162, 170, 174, 159, 162, 164, 171, 163, 161, 170, 149, 160, 142, 156, 166, 165,
+  166, 170, 158, 165, 166, 176, 160, 168, 157, 162, 171, 158, 157, 169, 154, 172, 163, 167, 158, 163,
+  147, 153, 163, 164, 175, 148, 145, 164, 166, 150, 162, 164, 155, 172, 158, 159, 170, 165, 159, 172,
+  154, 162, 153, 172, 162, 169, 160, 157, 171, 167, 160, 166, 171, 167, 154, 172, 159, 165, 154, 168,
+  155, 154, 147, 149, 157, 157, 164, 167, 146, 154, 164, 145, 168, 162, 156, 162, 152, 148, 164, 181,
+  162, 173, 168, 163, 177, 161, 165, 170, 175, 172, 154, 168, 154, 163, 156, 172, 157, 174, 168, 161,
+  169, 165, 174, 167, 151, 160, 153, 165, 166, 165, 164, 167, 150, 153, 154, 164, 160, 177, 178, 163,
+  162, 179, 160, 171, 156, 172, 158, 160, 181, 163, 152, 169, 176, 164, 161, 157, 167, 154, 165, 160,
+  153, 172, 155, 159, 160, 166, 164, 154, 159, 160, 152, 165, 160, 159, 168, 157, 158, 160, 172, 161,
+  161, 158, 175, 171, 169, 162, 155, 169, 178, 154, 178, 178, 164, 162, 173, 168, 175, 156, 166, 170,
+  157, 159, 158, 162, 169, 162, 176, 145, 163, 164, 160, 164, 163, 166, 179, 167, 153, 166, 183, 172,
+  157, 159, 165, 153, 175, 172, 162, 170, 180, 159, 152, 167, 169, 164, 157, 160, 168, 173, 170, 167,
+  169, 158, 178, 172, 168, 157, 171, 154, 162, 169, 162, 175, 155, 168, 167, 172, 159, 177, 166, 153,
+  154, 169, 165, 169, 150, 173, 156, 166, 154, 166, 174, 184, 171, 154, 170, 142, 170, 151, 151, 165,
+  172, 166, 167, 167, 161, 175, 173, 164, 159, 168, 168, 145, 152, 164, 164, 163, 161, 164, 173, 152,
+  168, 171, 167, 143, 163, 155, 153, 161, 146, 147, 168, 160, 160, 148, 158, 170, 164, 170, 150, 157,
+  150, 168, 158, 163, 163, 167, 180, 157, 157, 171, 166, 170, 166, 156, 159, 164, 156, 172, 160, 157,
+  163, 166, 152, 156, 156, 164, 173, 161, 165, 165, 153, 156, 164, 146, 166, 157, 167, 171, 176, 164,
+  168, 172, 156, 162, 168, 166, 156, 167, 166, 161, 155, 153, 159, 175, 158, 160, 148, 172, 151, 170,
+  169, 168, 159, 178, 150, 169, 168, 171, 177, 168, 161, 169, 174, 168, 158, 163, 155, 169, 156, 154,
+  174, 184, 163, 167, 167, 156, 158, 172, 170, 158, 157, 157, 170, 165, 171, 165, 163, 161, 167, 159,
+  153, 157, 172, 144, 156, 167, 159, 167, 164, 148, 186, 150, 169, 156, 168, 159, 166, 167, 160, 160,
+  160, 179, 157, 168, 164, 161, 162, 178, 165, 156, 164, 148, 160, 164, 164, 160, 156, 171, 160, 151,
+  167, 150, 176, 161, 159, 150, 159, 160, 175, 172, 157, 170, 157, 161, 167, 167, 164, 175, 169, 173,
+  167, 168, 163, 164, 184, 166, 173, 175, 152, 156, 160, 159, 165, 165, 164, 165, 163, 151, 178, 162,
+  164, 173, 162, 159, 157, 167, 173, 175, 162, 171, 165, 157, 176, 158, 152, 160, 167, 157, 174, 162]
+
+bins_2 = np.linspace(140,200,100)
+pyplot.hist(Y,bins_2)
+pyplot.title("Körpergröße von weiblichen Studierenden")
+pyplot.xlabel("Körpergröße in cm")
+pyplot.ylabel("Häufigkeit")
+pyplot.show()
 
 
-# generate normally distributed realizations of Y (the model observations)
-Ys = []
-for j in range(1, N + 1):
-    y = np.round(np.random.normal(0, sigma), decimals=5)
-    Ys.append(y)
 
-print(Ys)
-
-# generate the input X:
-Xs = []
-for l in range(1, N + 1):
-    x = np.round(np.random.uniform(-1, 1), decimals=5)
-    Xs.append(x)
-
-print(Xs)
-
-# model: Y_i = X_i * theta_j for each theta_j
-# sum_{j=1}^M sum_{i=1}^N (Y_i - X_i * theta_j)^2 / 2sigma
+# model: y_i = theta_j + eta (normally distribuded noise) for each theta_j
+# \frac{1}{NM} \sum_{i=1}^N \sum_{j=1}^M \frac{-1}{2} |y_i - \theta_j|^2
 
 # we use the implemented algorithm and therefore calculate:
-pre = np.reshape(np.concatenate((np.ones(N), np.asarray(Xs))), (2,N))
-# G_2 = 1/(sigma*M) * np.matmul(pre, pre.transpose())
-G_2 = np.array([[10.0, 0.26272100000000004], [0.26272100000000004, 3.626079655489999]])
-print(G_2)
-c_2 = 1/(sigma*M) * np.matmul(pre,Ys)
+
+G_2 = 1/(sigma*M)
+c_2 = 1/(sigma*M) * sum(Y)
 print(c_2)
-G = scipy.linalg.block_diag(G_2,G_2,G_2,G_2,G_2,G_2,G_2,G_2,G_2,G_2,np.zeros((M*p,M*p)))
-c = np.concatenate((np.tile(c_2,M),np.zeros(M*p)))
-pre2 = -1/M * np.ones(2*M)
-A = np.vstack((np.concatenate((np.zeros(p*M),-1/M*np.ones(p*M))),np.hstack((np.identity(p*M),np.identity(p*M))),np.hstack((-np.identity(p*M),np.identity(p*M)))))
+G_array = np.concatenate((np.tile(G_2,M),np.zeros(M)))
+G = np.diag(G_array)
+c = np.concatenate((np.tile(c_2,M),np.zeros(M)))
+pre = -1/M * np.ones(2*M)
+A = np.vstack((np.concatenate((np.zeros(M),-1/M*np.ones(M))),np.hstack((np.identity(M),np.identity(M))),np.hstack((-np.identity(M),np.identity(M)))))
 epsilon = [10**-6]
 b = np.concatenate(( -1*np.asarray(epsilon), np.asarray(thetas),-1*np.asarray(thetas)))
 # we start with an arbitrary point x_0,y_0,lambda_0 and use the implemented algorithm to find a starting point
@@ -56,4 +102,9 @@ b = np.concatenate(( -1*np.asarray(epsilon), np.asarray(thetas),-1*np.asarray(th
 x_0 = np.ones(2*M*p)
 y_0 = np.ones(2*M*p+1)
 lam_0 = np.ones(2*M*p+1)
-print(Algorithmus_IPM.start(G,A,b,c,x_0,y_0,lam_0))
+solution = Algorithmus_IPM.start(G,A,b,c,x_0,y_0,lam_0)
+#print(solution[:M+1])
+
+pyplot.hist([thetas,solution[:M]],bins,alpha=0.5,label = ["theta^hat","theta^*"])
+pyplot.legend(loc = 'upper right')
+pyplot.show()
