@@ -3,6 +3,10 @@
 import numpy as np
 import random
 
+primal_res = []
+dual_res = []
+steplength = []
+obj_func = []
 # IMPORTANT: dimensions are never checked in the functions!
 # Ensure that G is pos def symmetric (n x n), A is (m x n),
 # y, b and lambda have length m, x and c have length n
@@ -25,7 +29,11 @@ def predictorCorrector(G, A, b, c, x, y, lam):
     n = len(x)
     m = len(y)
     iteration = np.concatenate((x, y, lam), axis=None)
-    for i in range(1, 1000):  # 1000 iterations are rather randomly generated as i don't know convergence for this
+    for i in range(1, 15):  # 15 iterations usually are enough for the iterations to not change anymore
+        # (even 10 would be sufficient)
+        # I've also tried 100 and 1000 iterations without any change
+        objective = np.matmul(np.matmul(iteration[:n],G),iteration[:n]) + np.matmul(c,iteration[:n])
+        obj_func.append(objective)
         affines = np.round(linSolver1(G, A, b, c, iteration[:n], iteration[n:n+m], iteration[n+m:], 0,
                              0),decimals=5)  # as sigma is 0 anyways, we do not have to compute mu before this step
         y_aff = affines[n:n + m]  # left border included, right border excluded!
@@ -46,8 +54,13 @@ def predictorCorrector(G, A, b, c, x, y, lam):
         if alpha_hat <= 0 or alpha_hat > 1:
             print("failed")
             break
+        steplength.append(alpha_hat)
         iteration = iteration + alpha_hat * deltas
-        #print(iteration[:n])
+        print(iteration[:n])
+    print(primal_res)
+    print(dual_res)
+    print(steplength)
+    print(obj_func)
     return iteration
 
 
@@ -82,6 +95,8 @@ def linSolver2(G, A, b, c, x, y, lam, y_aff, lam_aff, sig, mu):
     bigyaff = np.diag(y_aff)
     rd = np.matmul(G, x) - np.matmul(A.transpose(), lam) + c
     rp = np.matmul(A, x) - y - b
+    primal_res.append(np.linalg.norm(rp))
+    dual_res.append(np.linalg.norm(rd))
     # normal equations form matrix and right hand side:
     N = G + np.matmul(np.matmul(A.transpose(), np.linalg.inv(bigy)), np.matmul(biglam, A))
     d = -rd + np.matmul(np.matmul(A.transpose(), np.linalg.inv(bigy)),
@@ -110,8 +125,8 @@ def affineAlphaSolver(y, lam, y_aff, lam_aff):
         if direction[i] >= 0:
             alpha.append(1)
         else:
-            alpha.append(-point[i] / direction[i])
-    return min(min(alpha), 1)
+            alpha.append(min(1,-point[i] / direction[i]))
+    return min(alpha)
 
 
 # the following function can be used to compute either of the values alpha_primal or alpha_dual, using y or lambda
