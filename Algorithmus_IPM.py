@@ -7,6 +7,7 @@ primal_res = []
 dual_res = []
 steplength = []
 obj_func = []
+complementary = []
 # IMPORTANT: dimensions are never checked in the functions!
 # Ensure that G is pos def symmetric (n x n), A is (m x n),
 # y, b and lambda have length m, x and c have length n
@@ -30,7 +31,6 @@ def predictorCorrector(G, A, b, c, x, y, lam):
     m = len(y)
     iteration = np.concatenate((x, y, lam), axis=None)
     for i in range(1, 15):  # 15 iterations usually are enough for the iterations to not change anymore
-        # (even 10 would be sufficient)
         # I've also tried 100 and 1000 iterations without any change
         objective = np.matmul(np.matmul(iteration[:n],G),iteration[:n]) + np.matmul(c,iteration[:n])
         obj_func.append(objective)
@@ -39,6 +39,7 @@ def predictorCorrector(G, A, b, c, x, y, lam):
         y_aff = affines[n:n + m]  # left border included, right border excluded!
         lam_aff = affines[n + m:]
         mu = np.matmul(iteration[n:n+m], iteration[n+m:]) / m
+        complementary.append(mu)
         alpha_aff = affineAlphaSolver(iteration[n:n+m], iteration[n+m:], y_aff, lam_aff)
         if alpha_aff <= 0 or alpha_aff > 1:
             print("failed")
@@ -61,6 +62,7 @@ def predictorCorrector(G, A, b, c, x, y, lam):
     print(dual_res)
     print(steplength)
     print(obj_func)
+    print(complementary)
     return iteration
 
 
